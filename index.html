@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Form Responses</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial; padding:20px;}
+    table{border-collapse:collapse; width:100%}
+    th,td{border:1px solid #ddd; padding:8px; text-align:left}
+    th{background:#f4f4f4}
+  </style>
+</head>
+<body>
+  <h1>Responses from Google Form</h1>
+  <div id="status">Loading…</div>
+  <table id="tbl" hidden>
+    <thead id="thead"></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+<script>
+// --- เปลี่ยนเป็นลิงก์ CSV ที่คุณได้จาก Publish to web ---
+const csvUrl = "https://docs.google.com/spreadsheets/d/1_0w4-O9SEWip-IEfthsqh_Oh0HfseUxDlt5CyC9rcwU/export?format=csv&gid=1433599473";
+
+function parseCSV(text){
+  // simple CSV parser (ไม่รองรับ quotes ซับซ้อนมาก) — พอใช้งานทั่วไป
+  const rows = text.trim().split('\n').map(r=>r.split(','));
+  return rows;
+}
+
+async function load(){
+  try{
+    const resp = await fetch(csvUrl);
+    if(!resp.ok) throw new Error("HTTP " + resp.status);
+    const text = await resp.text();
+    const rows = parseCSV(text);
+    if(rows.length === 0) {
+      document.getElementById('status').textContent = 'No data';
+      return;
+    }
+    const thead = document.getElementById('thead');
+    const tbody = document.getElementById('tbody');
+    const header = rows[0];
+    thead.innerHTML = '<tr>' + header.map(h=>`<th>${h}</th>`).join('') + '</tr>';
+    tbody.innerHTML = rows.slice(1).map(r => '<tr>' + r.map(c=>`<td>${c}</td>`).join('') + '</tr>').join('');
+    document.getElementById('status').hidden = true;
+    document.getElementById('tbl').hidden = false;
+  } catch(e){
+    document.getElementById('status').textContent = 'Error: ' + e.message;
+  }
+}
+
+load();
+</script>
+</body>
+</html>
