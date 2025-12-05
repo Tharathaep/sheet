@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Form Responses</title>
+  <title>Capcut Ai</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial; padding:20px;}
@@ -12,7 +12,7 @@
   </style>
 </head>
 <body>
-  <h1>Responses from Google Form</h1>
+  <h1>Google Form Capcut Ai</h1>
   <div id="status">Loading…</div>
   <table id="tbl" hidden>
     <thead id="thead"></thead>
@@ -24,7 +24,6 @@
 const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlbBbJnUVs97_ECSR-nbRYGR_kXFNdNZTfxXw2B_DnNODTKWfwgQspHL4bKe4WZSYOhcEyvLXdPW8-/pub?gid=1433599473&single=true&output=csv";
 
 function parseCSV(text){
-  // simple CSV parser (ไม่รองรับ quotes ซับซ้อนมาก) — พอใช้งานทั่วไป
   const rows = text.trim().split('\n').map(r=>r.split(','));
   return rows;
 }
@@ -35,17 +34,45 @@ async function load(){
     if(!resp.ok) throw new Error("HTTP " + resp.status);
     const text = await resp.text();
     const rows = parseCSV(text);
+    
     if(rows.length === 0) {
       document.getElementById('status').textContent = 'No data';
       return;
     }
+
     const thead = document.getElementById('thead');
     const tbody = document.getElementById('tbody');
+
     const header = rows[0];
-    thead.innerHTML = '<tr>' + header.map(h=>`<th>${h}</th>`).join('') + '</tr>';
-    tbody.innerHTML = rows.slice(1).map(r => '<tr>' + r.map(c=>`<td>${c}</td>`).join('') + '</tr>').join('');
+
+    // เพิ่มหัวคอลัมน์ "ลำดับ"
+    thead.innerHTML = 
+      '<tr><th>ลำดับ</th>' + 
+      header.map(h=>`<th>${h}</th>`).join('') + 
+      '</tr>';
+
+    // สร้างข้อมูลแถว + ใส่ลำดับ
+    const bodyRows = rows.slice(1).map((r, i) =>
+      '<tr>' +
+        `<td>${i+1}</td>` + 
+        r.map(c=>`<td>${c}</td>`).join('') +
+      '</tr>'
+    ).join('');
+
+    // จำนวนผู้ตอบทั้งหมด
+    const total = rows.length - 1;
+
+    // แสดงข้อมูล + แถวสรุปด้านล่าง
+    tbody.innerHTML = bodyRows + 
+      `<tr style="font-weight:bold; background:#fafafa">
+         <td colspan="${header.length + 1}">
+           จำนวนผู้ตอบทั้งหมด: ${total}
+         </td>
+       </tr>`;
+
     document.getElementById('status').hidden = true;
     document.getElementById('tbl').hidden = false;
+
   } catch(e){
     document.getElementById('status').textContent = 'Error: ' + e.message;
   }
