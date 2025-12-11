@@ -23,8 +23,25 @@
 // --- เปลี่ยนเป็นลิงก์ CSV ที่คุณได้จาก Publish to web ---
 const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSlbBbJnUVs97_ECSR-nbRYGR_kXFNdNZTfxXw2B_DnNODTKWfwgQspHL4bKe4WZSYOhcEyvLXdPW8-/pub?gid=1433599473&single=true&output=csv";
 
-function parseCSV(text){
-  const rows = text.trim().split('\n').map(r=>r.split(','));
+// CSV parser รองรับเครื่องหมายคำพูดตามมาตรฐาน RFC4180
+function parseCSV(text) {
+  const rows = [];
+  const lines = text.split(/\r?\n/);
+
+  const regex = /("([^"]|"")*"|[^,]+)/g;
+
+  for (let line of lines) {
+    const cells = [];
+    line.match(regex)?.forEach(cell => {
+      cell = cell.trim();
+      if (cell.startsWith('"') && cell.endsWith('"')) {
+        // ตัดเครื่องหมายคำพูด + แทน "" เป็น "
+        cell = cell.slice(1, -1).replace(/""/g, '"');
+      }
+      cells.push(cell);
+    });
+    rows.push(cells);
+  }
   return rows;
 }
 
@@ -34,7 +51,7 @@ async function load(){
     if(!resp.ok) throw new Error("HTTP " + resp.status);
     const text = await resp.text();
     const rows = parseCSV(text);
-    
+
     if(rows.length === 0) {
       document.getElementById('status').textContent = 'No data';
       return;
@@ -45,25 +62,22 @@ async function load(){
 
     const header = rows[0];
 
-    // เพิ่มหัวคอลัมน์ "ลำดับ"
-    thead.innerHTML = 
-      '<tr><th>ลำดับ</th>' + 
-      header.map(h=>`<th>${h}</th>`).join('') + 
+    // เพิ่มหัวคอลัมน์ลำดับ
+    thead.innerHTML =
+      '<tr><th>ลำดับ</th>' +
+      header.map(h => `<th>${h}</th>`).join('') +
       '</tr>';
 
-    // สร้างข้อมูลแถว + ใส่ลำดับ
     const bodyRows = rows.slice(1).map((r, i) =>
       '<tr>' +
-        `<td>${i+1}</td>` + 
-        r.map(c=>`<td>${c}</td>`).join('') +
+        `<td>${i+1}</td>` +
+        r.map(c => `<td>${c}</td>`).join('') +
       '</tr>'
     ).join('');
 
-    // จำนวนผู้ตอบทั้งหมด
     const total = rows.length - 1;
 
-    // แสดงข้อมูล + แถวสรุปด้านล่าง
-    tbody.innerHTML = bodyRows + 
+    tbody.innerHTML = bodyRows +
       `<tr style="font-weight:bold; background:#fafafa">
          <td colspan="${header.length + 1}">
            จำนวนผู้ตอบทั้งหมด: ${total}
